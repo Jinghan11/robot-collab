@@ -14,7 +14,7 @@ from .feedback import FeedbackManager
 from .parser import LLMResponseParser
 
 assert os.path.exists("openai_key.json"), "Please put your OpenAI API key in a string in robot-collab/openai_key.json"
-OPENAI_KEY = str(json.load(open("openai_key.json")))
+OPENAI_KEY = str(json.load(open("openai_key.json"))["openai_key"])
 openai.api_key = OPENAI_KEY
 
 PATH_PLAN_INSTRUCTION="""
@@ -70,7 +70,7 @@ class DialogPrompter:
         self.max_calls_per_round = max_calls_per_round 
         self.temperature = temperature
         self.llm_source = llm_source
-        assert llm_source in ["gpt-4", "gpt-3.5-turbo", "claude"], f"llm_source must be one of [gpt4, gpt-3.5-turbo, claude], got {llm_source}"
+        assert llm_source in ["gpt-4", "gpt-3.5-turbo","gpt-3.5-turbo-0125","text-embedding-ada-002", "claude"], f"llm_source must be one of [gpt4, gpt-3.5-turbo, claude], got {llm_source}"
 
     def compose_system_prompt(
         self, 
@@ -250,8 +250,8 @@ Your response is:
     def query_once(self, system_prompt, user_prompt, max_query):
         response = None
         usage = None   
-        # print('======= system prompt ======= \n ', system_prompt)
-        # print('======= user prompt ======= \n ', user_prompt)
+        print('======= system prompt ======= \n ', system_prompt)
+        print('======= user prompt ======= \n ', user_prompt)
 
         if self.debug_mode: 
             response = "EXECUTE\n"

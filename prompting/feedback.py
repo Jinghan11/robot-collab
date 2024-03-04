@@ -142,22 +142,22 @@ class FeedbackManager:
             all_passed = False
             feedback += f" - Reachability failed: Out of reach: {reach}\n  "
         else:
-            # feedback += " - Reach feedback: passed\n  "
+            feedback += " - Reach feedback: passed\n  "
             ik_feedback, ik_result = self.ik_feedback(pose_dict)
             if len(ik_feedback) > 0:
                 all_passed = False
                 feedback += f" - IK failed: on {ik_feedback}\n  "
             else:
-                # feedback += " - IK feedback: passed\n  "
+                feedback += " - IK feedback: passed\n  "
                 collision_feedback = self.collision_feedback(llm_plan, ik_result)
                 if len(collision_feedback) > 0:
                     all_passed = False
                     feedback += f" - Collision detected: {collision_feedback}\n  "
-                # else:
-                #     feedback += " - Collision feedback: passed\n  "
+                else:
+                    feedback += " - Collision feedback: passed\n  "
         if all_passed:
-            # feedback = f"{step_type} Step {step_string}: All checks passed\n"
-            feedback = ""
+            feedback = f"{step_type} Step {step_string}: All checks passed\n"
+            # feedback = ""
         return all_passed, feedback
  
     def give_feedback(self, llm_plan: LLMPathPlan) -> Tuple[bool, str]:

@@ -1,3 +1,5 @@
+import sys
+sys.path.append('/home/linjh/open_source_code/robot-collab')
 import re
 import numpy as np
 from rocobench.subtask_plan import LLMPathPlan
@@ -45,6 +47,7 @@ class LLMResponseParser:
             robot_state = getattr(obs, robot_name)
             robot_states[agent_name] = robot_state 
         
+        # split and get the response after the EXECUTE keyword
         execute_str = response.split('EXECUTE')[1]
         # find the \n to split the string into line by line
         lines = execute_str.split('\n')
@@ -988,7 +991,7 @@ class LLMResponseParser:
         
 
 if __name__ == "__main__":
-    from envs import MujocoSimEnv, EnvState, SortBlockTask, SortOneBlockTask 
+    from rocobench.envs import MujocoSimEnv, EnvState, SortOneBlockTask 
     env = SortOneBlockTask()
     obs = env.reset()
 

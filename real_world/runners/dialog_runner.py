@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logging.root.setLevel(logging.INFO)
 
 key_path="../openai_key.json"  # TODO: change this to your own key 
-OPENAI_KEY = json.load(open(key_path))
+OPENAI_KEY = str(json.load(open("openai_key.json"))["openai_key"])
 openai.api_key = OPENAI_KEY 
 
 WS_CROP_X = (180, -120)

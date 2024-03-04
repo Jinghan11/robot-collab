@@ -7,6 +7,7 @@ import numpy as np
 from pydantic import dataclasses, validator 
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import dm_control 
+import dm_control.viewer as viewer
 from dm_control.utils.transformations import mat_to_quat
 from pyquaternion import Quaternion
 from rocobench.envs.base_env import MujocoSimEnv, EnvState
@@ -122,7 +123,10 @@ class MoveRopeTask(MujocoSimEnv):
         self.rope_length = np.linalg.norm(
             self.physics.data.body(ROPE_FRONT_BODY).xpos - self.physics.data.body(ROPE_BACK_BODY).xpos
             )
-        
+    
+    # def launch_viewer(self):
+    #     viewer.launch(self.action_spec, self.physics, title="MoveRopeTask")
+
     @property
     def waypoint_std_threshold(self):
         return 0.3

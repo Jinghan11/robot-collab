@@ -16,6 +16,7 @@ import mujoco
 from mujoco import FatalError as mujocoFatalError
 import dm_control 
 from dm_control import mujoco as dm_mujoco
+from dm_control import viewer
 from dm_control.utils.transformations import mat_to_quat, quat_to_euler
 from .env_utils import AllowArbitraryTypes, VisionSensorOutput, PointCloud
 from .constants import UR5E_ROBOTIQ_CONSTANTS, UR5E_SUCTION_CONSTANTS, PANDA_CONSTANTS, SCENE_BOUNDS
@@ -216,6 +217,7 @@ class MujocoSimEnv:
         self.physics = dm_mujoco.Physics.from_xml_path(filepath)
         self.home_qpos = home_qpos 
         self.home_keyframe_id = home_keyframe_id
+        # self.viewer = viewer.Viewer(self.physics)
 
         # try loading home_qpos to the xml file 
         try:
@@ -686,6 +688,7 @@ class MujocoSimEnv:
         contact_margins = self.physics.model.pair_margin.copy()
         self.physics.model.pair_margin[:] = 0.0
         self.physics.forward()
+        # self.viewer.render()
         for step in range(self.sim_forward_steps): 
             self.data.ctrl[ctrl_idxs] = ctrl_vals 
 

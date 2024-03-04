@@ -12,7 +12,9 @@ from typing import List, Tuple, Dict, Union, Optional, Any
 from collections import defaultdict
 import matplotlib.pyplot as plt
 
-from rocobench.envs import SortOneBlockTask, CabinetTask, MoveRopeTask, SweepTask, MakeSandwichTask, PackGroceryTask, MujocoSimEnv, SimRobot, visualize_voxel_scene
+from dm_control import viewer
+from rocobench.envs import SortOneBlockTask, CabinetTask, MoveRopeTask, SweepTask, MakeSandwichTask, PackGroceryTask, \
+    MujocoSimEnv, SimRobot, visualize_voxel_scene
 from rocobench import PlannedPathPolicy, LLMPathPlan, MultiArmRRT
 from prompting import LLMResponseParser, FeedbackManager, DialogPrompter, SingleThreadPrompter, save_episode_html
 
@@ -29,39 +31,40 @@ TASK_NAME_MAP = {
     "pack": PackGroceryTask,
 }
 
+
 class LLMRunner:
     def __init__(
-        self,
-        env: MujocoSimEnv,
-        robots: Dict[str, SimRobot],
-        max_runner_steps: int = 50,
-        video_format: str = "mp4",
-        num_runs: int = 1,
-        verbose: bool =False,
-        np_seed: int = 0,
-        start_seed: int = 0,
-        run_name: str = "run",
-        data_dir: str = "data",
-        overwrite: bool = False,
-        llm_output_mode="action_only", # "action_only" or "action_and_path"
-        llm_comm_mode="chat",
-        llm_num_replans=1,
-        give_env_feedback=True,
-        skip_display=False,
-        policy_kwargs: Dict[str, Any] = dict(control_freq=50),
-        direct_waypoints: int = 0,
-        max_failed_waypoints: int = 0,
-        debug_mode: bool = False,
-        split_parsed_plans: bool = False,
-        use_history: bool = False,
-        use_feedback: bool = False,
-        temperature: float = 0.0,
-        llm_source: str = "gpt4",
-        ):
+            self,
+            env: MujocoSimEnv,
+            robots: Dict[str, SimRobot],
+            max_runner_steps: int = 50,
+            video_format: str = "mp4",
+            num_runs: int = 1,
+            verbose: bool = False,
+            np_seed: int = 0,
+            start_seed: int = 0,
+            run_name: str = "run",
+            data_dir: str = "data",
+            overwrite: bool = False,
+            llm_output_mode="action_only",  # "action_only" or "action_and_path"
+            llm_comm_mode="chat",
+            llm_num_replans=1,
+            give_env_feedback=True,
+            skip_display=False,
+            policy_kwargs: Dict[str, Any] = dict(control_freq=50),
+            direct_waypoints: int = 0,
+            max_failed_waypoints: int = 0,
+            debug_mode: bool = False,
+            split_parsed_plans: bool = False,
+            use_history: bool = False,
+            use_feedback: bool = False,
+            temperature: float = 0.0,
+            llm_source: str = "gpt4",
+    ):
         self.env = env
         self.env.reset()
         self.robots = robots
-        self.robot_agent_names = list(robots.keys()) # ['Alice', etc.]
+        self.robot_agent_names = list(robots.keys())  # ['Alice', etc.]
         self.data_dir = data_dir
         self.run_name = run_name
         run_dir = os.path.join(self.data_dir, self.run_name)
@@ -80,8 +83,7 @@ class LLMRunner:
         self.use_feedback = use_feedback
 
         self.llm_output_mode = llm_output_mode
-        self.debug_mode = debug_mode # useful for debug
-
+        self.debug_mode = debug_mode  # useful for debug
 
         self.llm_num_replans = llm_num_replans
         self.llm_comm_mode = llm_comm_mode
@@ -106,8 +108,8 @@ class LLMRunner:
             self.response_keywords,
             self.direct_waypoints,
             use_prepick=self.env.use_prepick,
-            use_preplace=self.env.use_preplace, # NOTE: should be custom defined in each task env
-            split_parsed_plans=False, # self.split_parsed_plans,
+            use_preplace=self.env.use_preplace,  # NOTE: should be custom defined in each task env
+            split_parsed_plans=False,  # self.split_parsed_plans,
         )
         self.feedback_manager = FeedbackManager(
             env=self.env,
@@ -150,9 +152,8 @@ class LLMRunner:
                 llm_source=llm_source,
             )
 
-
-    def display_plan(self, plan: LLMPathPlan, save_name = "vis_plan", save_dir = None):
-        """ Display the plan in the open3d viewer """ 
+    def display_plan(self, plan: LLMPathPlan, save_name="vis_plan", save_dir=None):
+        """ Display the plan in the open3d viewer """
         env = deepcopy(self.env)
         env.physics.data.qpos[:] = self.env.physics.data.qpos[:].copy()
         env.physics.forward()
@@ -166,14 +167,14 @@ class LLMRunner:
             path_pts=path_ls,
             save_img=(save_dir is not None),
             img_path=save_path
-            )
-        
+        )
 
-    def one_run(self, run_id: int = 0, start_step: int = 0, skip_reset = False, prev_llm_plans = [], prev_response = None, prev_actions = None):
+    def one_run(self, run_id: int = 0, start_step: int = 0, skip_reset=False, prev_llm_plans=[], prev_response=None,
+                prev_actions=None):
         """ uses planner """
         self.env.seed(np_seed=run_id)
         if not skip_reset:
-            self.env.reset(reload=True) # NOTE: need to do this to reset the model.eq_active vals
+            self.env.reset(reload=True)  # NOTE: need to do this to reset the model.eq_active vals
         env = self.env
         physics = env.physics
         success = False
@@ -195,7 +196,6 @@ class LLMRunner:
             with open(data_fname, "wb") as f:
                 pickle.dump(sim_data, f)
 
-
             if step == start_step and len(prev_llm_plans) > 0:
                 ready_to_execute = 1
                 current_llm_plan = prev_llm_plans
@@ -212,8 +212,9 @@ class LLMRunner:
                 ready_to_execute, current_llm_plan, response, prompt_breakdown = self.prompter.prompt_one_round(
                     obs,
                     save_path=prompt_path,
-                    # prev_response=(prev_response['response'] if step == start_step and prev_response is not None else None)
-                    )
+                    # prev_response=(prev_response['response'] if step == start_step and prev_response is not None
+                    # else None)
+                )
                 if not ready_to_execute or current_llm_plan is None:
                     print(f"Run {run_id}: Step {step} failed to get a plan from LLM. Move on to next step.")
                     continue
@@ -222,12 +223,10 @@ class LLMRunner:
                     for i, plan in enumerate(current_llm_plan):
                         self.display_plan(plan, save_name=f"vis_llm_plan_{i}", save_dir=step_dir)
 
-
                 for i, plan in enumerate(current_llm_plan):
                     save_fname = os.path.join(step_dir, f"llm_plan_{i}.pkl")
                     with open(save_fname, "wb") as f:
                         pickle.dump(plan, f)
-
 
             logging.info(f"Step: {step} LLM plan parsed, begin RRT planning ")
             # try execute this plan, if one of the plan failed, rewind the env to before the first plan was executed!
@@ -275,8 +274,16 @@ class LLMRunner:
 
                 if num_sim_steps > 0:
                     vid_name = f"{step_dir}/execute.mp4"
-                    env.export_render_to_video(vid_name, out_type=self.video_format,  fps=50)
+                    env.export_render_to_video(vid_name, out_type=self.video_format, fps=50)
                     print(f'Plans all executed! Video sample saved to {vid_name}')
+                    # while not policy.plan_exhausted:
+                    #     print("Start the simulation.")
+                    #     env.render() 
+
+                    #     sim_action = policy.act(obs, env.physics)
+                    #     obs, reward, done, info = env.step(sim_action, verbose=False)
+
+                    # env.close()
 
                 else:
                     print(f"Plan {i} failed to execute.")
@@ -295,7 +302,7 @@ class LLMRunner:
                 pickle.dump(sim_data, f)
 
             self.prompter.post_execute_update(
-                obs_desp="", # TODO
+                obs_desp="",  # TODO
                 execute_success=(not rewind_env),
                 parsed_plan=current_llm_plan[0].get_action_desp()
             )
@@ -315,9 +322,8 @@ class LLMRunner:
             html_fname=f"steps{step}_success_{success}",
             video_fname="execute.mp4",
             sender_keys=["Alice", "Bob", "Chad", "Dave", "Planner", "Feedback", "Action"],
-            )
+        )
         print(f"Episode html saved to {save_dir}")
-
 
     def run(self, args):
         start_id = 0 if args.start_id == -1 else args.start_id
@@ -345,15 +351,15 @@ class LLMRunner:
             next_step = int(latest_step.split("/")[-1].split("_")[-1])
             prev_llm_plans = []
             prev_plans = natsorted(
-                    glob(os.path.join(latest_step, "llm_plan_*pkl"))
-                    )
+                glob(os.path.join(latest_step, "llm_plan_*pkl"))
+            )
             if len(prev_plans) > 0:
                 prev_llm_plans = [pickle.load(open(fname, "rb")) for fname in prev_plans]
 
             prev_response = None
             prev_responses = natsorted(
-                    glob(os.path.join(latest_step, "prompts", "*response.json"))
-                    )
+                glob(os.path.join(latest_step, "prompts", "*response.json"))
+            )
             if len(prev_responses) > 0:
                 prev_response = json.load(open(prev_responses[-1], "rb"))
 
@@ -369,7 +375,7 @@ class LLMRunner:
                 prev_llm_plans=prev_llm_plans,
                 prev_response=prev_response,
                 prev_actions=prev_actions
-                )
+            )
             start_id = args.load_run_id + 1
         existing_runs = glob(os.path.join(self.data_dir, args.run_name, "run_*"))
         if args.start_id == -1 and len(existing_runs) > 0:
@@ -378,6 +384,7 @@ class LLMRunner:
         for run_id in range(start_id, start_id + self.num_runs):
             print(f"==== Run {run_id} starts ====")
             self.one_run(run_id)
+
 
 def main(args):
     assert args.task in TASK_NAME_MAP.keys(), f"Task {args.task} not supported"
@@ -411,19 +418,20 @@ def main(args):
         render_freq = 3000
     env = env_cl(
         render_freq=render_freq,
-        image_hw=(400,400),
+        image_hw=(400, 400),
         sim_forward_steps=300,
         error_freq=30,
         error_threshold=1e-5,
         randomize_init=True,
         render_point_cloud=0,
-        render_cameras=["face_panda","face_ur5e","teaser",],
+        render_cameras=["face_panda", "face_ur5e", "teaser", ],
         one_obj_each=True,
     )
+    # viewer.launch(env.physics)
+    env.launch_viewer()
     robots = env.get_sim_robots()
     if args.no_feedback:
         assert args.num_replans == 1, "no feedback mode requires num_replans=1 but longer -tsteps"
-
 
     # save args into a json file
     args_dict = vars(args)
@@ -441,8 +449,8 @@ def main(args):
         run_name=args.run_name,
         overwrite=True,
         skip_display=args.skip_display,
-        llm_output_mode=args.output_mode, # "action_only" or "action_and_path"
-        llm_comm_mode=args.comm_mode, # "chat" or "plan"
+        llm_output_mode=args.output_mode,  # "action_only" or "action_and_path"
+        llm_comm_mode=args.comm_mode,  # "chat" or "plan"
         llm_num_replans=args.num_replans,
         policy_kwargs=dict(
             control_freq=args.control_freq,
@@ -461,6 +469,7 @@ def main(args):
         llm_source=args.llm_source,
     )
     runner.run(args)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
